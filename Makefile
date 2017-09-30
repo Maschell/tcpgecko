@@ -39,7 +39,7 @@ SOURCES		:=	src \
 				src/patcher \
 				src/system \
 				src/utils \
-				src/tcpgecko
+				src/tcp_gecko_engine
 DATA		:=	
 
 INCLUDES	:=  src

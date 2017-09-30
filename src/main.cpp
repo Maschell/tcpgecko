@@ -14,19 +14,15 @@
 #include "system/memory.h"
 #include "common/common.h"
 #include "main.h"
-#include "tcpgecko/code_handler.h"
 #include "utils/logger.h"
 #include "utils/function_patcher.h"
 #include "patcher/function_patcher_gx2.h"
 #include "patcher/function_patcher_coreinit.h"
-#include "tcpgecko/title.h"
-#include "tcpgecko/tcp_gecko.h"
-#include "tcpgecko/sd_cheats.h"
+
+#include "tcp_gecko_engine/tcp_gecko.h"
+
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
-
-bool isCodeHandlerInstalled = false;
-bool areSDCheatsEnabled = false;
 
 typedef enum {
 	EXIT,
@@ -36,13 +32,6 @@ typedef enum {
 void applyFunctionPatches() {
 	patchIndividualMethodHooks(method_hooks_gx2, method_hooks_size_gx2, method_calls_gx2);
 	patchIndividualMethodHooks(method_hooks_coreinit, method_hooks_size_coreinit, method_calls_coreinit);
-}
-
-void installCodeHandler() {
-	unsigned int physicalCodeHandlerAddress = (unsigned int) OSEffectiveToPhysical((void *) CODE_HANDLER_INSTALL_ADDRESS);
-	SC0x25_KernelCopyData((u32) physicalCodeHandlerAddress, (unsigned int) codeHandler, codeHandlerLength);
-	DCFlushRange((const void *) CODE_HANDLER_INSTALL_ADDRESS, (u32) codeHandlerLength);
-	isCodeHandlerInstalled = true;
 }
 
 unsigned char *screenBuffer;
@@ -65,7 +54,7 @@ void initializeScreen() {
 }
 
 void install() {
-	installCodeHandler();
+	TCPGecko::installCodeHandler();
 	log_print("Patching functions\n");
 	applyFunctionPatches();
 }
@@ -98,6 +87,17 @@ int unmountSDCard(){
 
 /* Entry point */
 int Menu_Main(void) {
+    if (TCPGecko::isRunningAllowedTitleID()) {
+		InitOSFunctionPointers();
+		InitSocketFunctionPointers();
+		InitGX2FunctionPointers();
+
+		log_init();
+		log_print("OSGetTitleID checks passed...\n");
+		TCPGecko::startTCPGecko();
+
+		return EXIT_RELAUNCH_ON_LOAD;
+	}
 	//!*******************************************************************
 	//!                   Initialize function pointers                   *
 	//!*******************************************************************
@@ -208,7 +208,7 @@ int Menu_Main(void) {
 		} else if (pressedButtons & VPAD_BUTTON_X) {
 			install();
 			launchMethod = TCP_GECKO;
-			areSDCheatsEnabled = true;
+			TCPGecko::setSDCheatsEnabled(true);
 
 			break;
 		}
@@ -234,9 +234,9 @@ int Menu_Main(void) {
 		SYSLaunchMenu();
 	}
 
-	if (areSDCheatsEnabled && shouldLoadSDCheats()) {
+	if (TCPGecko::areSDCheatsEnabled() && TCPGecko::shouldLoadSDCheats()) {
         if(mountSDCard() == 0){
-            applySDCheats(SD_PATH);
+            TCPGecko::applySDCheats(SD_PATH);
             unmountSDCard();
         }
     }

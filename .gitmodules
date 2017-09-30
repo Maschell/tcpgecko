@@ -1,3 +1,6 @@
 [submodule "src/dynamic_libs"]
 	path = src/dynamic_libs
 	url = https://github.com/Maschell/dynamic_libs
+[submodule "src/tcp_gecko_engine"]
+	path = src/tcp_gecko_engine
+	url = https://github.com/BullyWiiPlaza/tcp_gecko_engine

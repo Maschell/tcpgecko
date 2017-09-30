@@ -21,7 +21,7 @@
 #include "../utils/logger.h"
 #include "function_patcher_gx2.h"
 #include "dynamic_libs/os_functions.h"
-#include "tcpgecko/tcpgecko_retainvars.h"
+#include "tcp_gecko_engine/tcp_gecko.h"
 #include <gd.h>
 #include <string.h> // memcpy()
 
@@ -34,28 +34,30 @@ declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *
 		log_printf("GX2CopyColorBufferToScanBuffer {surface width:%d, height:%d, image size:%d, image data:%x}\n",
 				   surface.width, surface.height, surface.image_size, surface.image_data);
 
-		if (tcpg_shouldTakeScreenShot) {
+		if (TCPGecko::shouldTakeScreenShot()) {
+		    TCPGecko::resetScreenshotBuffer();
+            screenshotBufferInfo * buffer = TCPGecko::getScreenshotBuffer();
 			void *imageData = surface.image_data;
-			tcpg_totalImageSize = surface.image_size;
-			tcpg_remainingImageSize = tcpg_totalImageSize;
+			buffer->totalImageSize = surface.image_size;
+			buffer->remainingImageSize = buffer->totalImageSize;
 			int bufferSize = IMAGE_BUFFER_SIZE;
 
-			while (tcpg_remainingImageSize > 0) {
-				tcpg_bufferedImageData = malloc(bufferSize);
-				u32 imageSizeRead = tcpg_totalImageSize - tcpg_remainingImageSize;
-				memcpy(tcpg_bufferedImageData, imageData + imageSizeRead, bufferSize);
-				tcpg_bufferedImageSize = bufferSize;
+			while (buffer->remainingImageSize > 0) {
+				buffer->bufferedImageData = malloc(bufferSize);
+				u32 imageSizeRead = buffer->totalImageSize - buffer->remainingImageSize;
+				memcpy(buffer->bufferedImageData, imageData + imageSizeRead, bufferSize);
+				buffer->bufferedImageSize = bufferSize;
 
 				// Wait while the data is not read yet
-				while (tcpg_bufferedImageSize > 0) {
+				while (buffer->bufferedImageSize > 0) {
 					os_usleep(WAITING_TIME_MILLISECONDS);
 				}
 
-				free(tcpg_bufferedImageData);
-				tcpg_remainingImageSize -= bufferSize;
+				free(buffer->bufferedImageData);
+				buffer->remainingImageSize -= bufferSize;
 			}
 
-			tcpg_shouldTakeScreenShot = false;
+			buffer->shouldTakeScreenShot = false;
 		}
 		/*s32 format = surface.format;
 

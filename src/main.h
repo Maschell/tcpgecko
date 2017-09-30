@@ -10,9 +10,6 @@ extern "C" {
 
 int Menu_Main();
 
-extern bool isCodeHandlerInstalled;
-extern bool areSDCheatsEnabled;
-
 #ifdef __cplusplus
 }
 #endif
