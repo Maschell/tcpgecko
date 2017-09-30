@@ -190,7 +190,7 @@ int Menu_Main(void) {
 		// Button pressed?
 		shouldUpdateScreen = (pressedButtons &
 							  (VPAD_BUTTON_LEFT | VPAD_BUTTON_RIGHT | VPAD_BUTTON_UP | VPAD_BUTTON_DOWN)) ? 1 : 0;
-		usleep(20 * 1000);
+		os_usleep(20 * 1000);
 	}
 
 	asm volatile ("mr 13, %0" : : "r" (old_sdata_start));

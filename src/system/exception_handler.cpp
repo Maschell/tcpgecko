@@ -66,8 +66,7 @@ static unsigned char exceptionCallback(void *c, unsigned char exception_type) {
 	pos += sprintf(stackTraceBuffer + pos, exception_print_formats[9], context->lr, context->srr0, context->srr1);
 
 	//if(exception_type == OS_EXCEPTION_DSI) {
-	pos += sprintf(stackTraceBuffer + pos, exception_print_formats[10], context->exception_specific1,
-				   context->exception_specific0); // this freezes
+    pos += sprintf(stackTraceBuffer + pos, exception_print_formats[10], context->ex1, context->ex0); // this freezes
 	//}
 
 	void *pc = (void *) context->srr0;
@@ -125,15 +124,15 @@ static unsigned char exceptionCallback(void *c, unsigned char exception_type) {
 	return 1;
 }
 
-static unsigned char dsi_exception_cb(void *context) {
+static unsigned char dsi_exception_cb(OSContext *context) {
 	return exceptionCallback(context, 0);
 }
 
-static unsigned char isi_exception_cb(void *context) {
+static unsigned char isi_exception_cb(OSContext *context) {
 	return exceptionCallback(context, 1);
 }
 
-unsigned char program_exception_cb(void *context) {
+unsigned char program_exception_cb(OSContext *context) {
 	return exceptionCallback(context, 2);
 }
 

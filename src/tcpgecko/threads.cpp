@@ -5,15 +5,15 @@
 
 struct node *getAllThreads() {
 	struct node *threads = NULL;
-	int currentThreadAddress = OSGetCurrentThread();
+	OSThread * currentThreadAddress = OSGetCurrentThread();
 	log_printf("Thread address: %08x\n", currentThreadAddress);
-	int iterationThreadAddress = currentThreadAddress;
+	OSThread * iterationThreadAddress = currentThreadAddress;
 	int temporaryThreadAddress;
 
 	// Follow "previous thread" pointers back to the beginning
 	while ((temporaryThreadAddress = *(int *) (iterationThreadAddress + PREVIOUS_THREAD)) != 0) {
 		log_printf("Temporary thread address going backwards: %08x\n", temporaryThreadAddress);
-		iterationThreadAddress = temporaryThreadAddress;
+		iterationThreadAddress = (OSThread *) temporaryThreadAddress;
 	}
 
 	// Now iterate over all threads
@@ -22,7 +22,7 @@ struct node *getAllThreads() {
 		log_printf("Temporary thread address going forward: %08x\n", temporaryThreadAddress);
 		threads = insert(threads, (void *) iterationThreadAddress);
 		log_printf("Inserted: %08x\n", iterationThreadAddress);
-		iterationThreadAddress = temporaryThreadAddress;
+		iterationThreadAddress = (OSThread *) temporaryThreadAddress;
 	}
 
 	// The previous while would skip the last thread so add it as well

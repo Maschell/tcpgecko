@@ -44,17 +44,15 @@ static inline int getIABRAddress() {
 	return mfspr(IABR);
 }
 
-static inline int getDABRAddress(void *interruptedContext) {
-	OSContext *context = (OSContext *) interruptedContext;
-	return (int) context->srr0; // Offset 0xA4
+static inline int getDABRAddress(OSContext *interruptedContext) {
+	return (int) interruptedContext->srr0; // Offset 0xA4
 }
 
-static inline int getIABRMatch(void *interruptedContext) {
-	OSContext *context = (OSContext *) interruptedContext;
-	return (int) context->exception_specific1; // Offset 0x98
+static inline int getIABRMatch(OSContext *interruptedContext) {
+	return (int) interruptedContext->ex1; // Offset 0x98
 }
 
-unsigned char breakPointHandler(void *interruptedContext);
+unsigned char breakPointHandler(OSContext *interruptedContext);
 
 void registerBreakPointHandler() {
 	log_print("Registering breakpoint handler...\n");
@@ -120,17 +118,17 @@ void setInstructionBreakpoint(unsigned int address) {
 	log_printf("IABR spr value: %08x\n", returnedAddress);*/
 }
 
-unsigned char breakPointHandler(void *interruptedContext) {
+unsigned char breakPointHandler(OSContext *interruptedContext) {
 	// Check for data breakpoints
 	int dataAddress = getDABRAddress(interruptedContext);
-	if (OSIsAddressValid((const void *) dataAddress)) {
+	if (OSIsAddressValid((void *) dataAddress)) {
 		log_printf("Data breakpoint address: %x08\n", dataAddress);
 	} else {
 		log_printf("Data breakpoint invalid address: %x08\n", dataAddress);
 
 		// Check for instruction breakpoints
 		int instructionAddress = getIABRMatch(interruptedContext);
-		if (OSIsAddressValid((const void *) instructionAddress)) {
+		if (OSIsAddressValid((void *) instructionAddress)) {
 			log_printf("Instruction breakpoint address: %x08\n", dataAddress);
 		} else {
 			log_print("Instruction breakpoint failed!\n");

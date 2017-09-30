@@ -56,7 +56,7 @@ s32 kernelCopyService(s32 argc, void *argv) {
 		int destinationAddress = *(int *) KERNEL_COPY_SOURCE_ADDRESS;
 
 		// Avoid crashing
-		if (OSIsAddressValid((const void *) destinationAddress)) {
+		if (OSIsAddressValid((void *) destinationAddress)) {
 			// Perform memory copy
 			unsigned char *valueBuffer = (unsigned char *) (KERNEL_COPY_SOURCE_ADDRESS + 4);
 			kernelCopyInt((unsigned char *) destinationAddress, valueBuffer, 4);
@@ -76,7 +76,7 @@ void startKernelCopyService() {
 
 	if (stack != 0) {
 		stack += 0x100;
-		void *thread = memalign(0x40, 0x1000);
+		OSThread *thread = (OSThread*) memalign(0x40, 0x1000);
 		ASSERT_ALLOCATED(thread, "Kernel copy thread")
 
 		int status = OSCreateThread(thread, kernelCopyService, 1, NULL, (u32) stack + sizeof(stack), sizeof(stack), 31,

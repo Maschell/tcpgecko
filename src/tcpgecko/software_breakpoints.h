@@ -29,7 +29,7 @@ struct Breakpoint {
 #define GENERAL_BREAKPOINTS_COUNT 10
 #define STEP_BREAKPOINTS_COUNT 2
 
-unsigned char ProgramHandler_Debug(void *interruptedContext) {
+unsigned char ProgramHandler_Debug(OSContext *interruptedContext) {
 	OSFatal("Hi");
 
 	return 0;

@@ -30,7 +30,7 @@ bool kernelCopyServiceStarted;
 
 struct pygecko_bss_t {
 	int error, line;
-	void *thread;
+	OSThread thread;
 	unsigned char stack[0x6F00];
 };
 
@@ -659,7 +659,7 @@ static int processCommands(struct pygecko_bss_t *bss, int clientfd) {
 					while (bufferPosition <= DATA_BUFFER_SIZE) {
 						// Wait for data to be available
 						while (bufferedImageSize == 0) {
-							usleep(WAITING_TIME_MILLISECONDS);
+							os_usleep(WAITING_TIME_MILLISECONDS);
 						}
 
 						memcpy(buffer + bufferPosition, bufferedImageData, bufferedImageSize);
@@ -745,7 +745,7 @@ static int processCommands(struct pygecko_bss_t *bss, int clientfd) {
 
 				considerInitializingFileSystem();
 
-				int handle;
+				s32 handle;
 				int status = FSOpenFile(client, commandBlock, file_path, "r", &handle, FS_RET_ALL_ERROR);
 
 				if (status == FS_STATUS_OK) {
@@ -854,7 +854,7 @@ static int processCommands(struct pygecko_bss_t *bss, int clientfd) {
 				considerInitializingFileSystem();
 
 				// Create an empty file for writing. Its contents will be erased
-				int handle;
+				s32 handle;
 				int status = FSOpenFile(client, commandBlock, file_path, "w", &handle, FS_RET_ALL_ERROR);
 
 				if (status == FS_STATUS_OK) {
@@ -1526,7 +1526,7 @@ static s32 startTCPGeckoThread(s32 argc, void *argv) {
 		void (*codeHandlerFunction)() = (void (*)()) CODE_HANDLER_INSTALL_ADDRESS;
 
 		while (true) {
-			usleep(9000);
+			os_usleep(9000);
 
 			// considerApplyingSDCheats();
 			// log_print("Running code handler...\n");
@@ -1557,7 +1557,7 @@ void startTCPGecko() {
 	unsigned int stack = (unsigned int) memalign(0x40, 0x100);
 	ASSERT_ALLOCATED(stack, "TCP Gecko stack")
 	stack += 0x100;
-	void *thread = memalign(0x40, 0x1000);
+	OSThread *thread = (OSThread *) memalign(0x40, 0x1000);
 	ASSERT_ALLOCATED(thread, "TCP Gecko thread")
 
 	int status = OSCreateThread(thread, startTCPGeckoThread, (s32) 1,

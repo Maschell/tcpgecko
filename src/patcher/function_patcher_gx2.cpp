@@ -20,6 +20,7 @@
 #include "../utils/function_patcher.h"
 #include "../utils/logger.h"
 #include "function_patcher_gx2.h"
+#include "dynamic_libs/os_functions.h"
 #include <gd.h>
 #include <string.h> // memcpy()
 
@@ -52,7 +53,7 @@ declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *
 
 				// Wait while the data is not read yet
 				while (bufferedImageSize > 0) {
-					usleep(WAITING_TIME_MILLISECONDS);
+					os_usleep(WAITING_TIME_MILLISECONDS);
 				}
 
 				free(bufferedImageData);
