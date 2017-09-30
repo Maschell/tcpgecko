@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common/fs_defs.h"
+#include "../dynamic_libs/fs_defs.h"
 #include "../utils/logger.h"
 #include "../dynamic_libs/os_functions.h"
 #include <gd.h>

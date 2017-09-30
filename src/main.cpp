@@ -5,23 +5,25 @@
 #include <malloc.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../dynamic_libs/os_functions.h"
-#include "../dynamic_libs/fs_functions.h"
-#include "../dynamic_libs/sys_functions.h"
-#include "../dynamic_libs/vpad_functions.h"
-#include "../dynamic_libs/socket_functions.h"
-#include "../kernel/kernel_functions.h"
-#include "../system/memory.h"
-#include "../common/common.h"
+#include "dynamic_libs/os_functions.h"
+#include "dynamic_libs/fs_functions.h"
+#include "dynamic_libs/sys_functions.h"
+#include "dynamic_libs/vpad_functions.h"
+#include "dynamic_libs/socket_functions.h"
+#include "kernel/kernel_functions.h"
+#include "system/memory.h"
+#include "common/common.h"
 #include "main.h"
-#include "code_handler.h"
-#include "../utils/logger.h"
-#include "../utils/function_patcher.h"
-#include "../patcher/function_patcher_gx2.h"
-#include "../patcher/function_patcher_coreinit.h"
-#include "sd_ip_reader.h"
-#include "title.h"
-#include "tcp_gecko.h"
+#include "tcpgecko/code_handler.h"
+#include "utils/logger.h"
+#include "utils/function_patcher.h"
+#include "patcher/function_patcher_gx2.h"
+#include "patcher/function_patcher_coreinit.h"
+#include "tcpgecko/title.h"
+#include "tcpgecko/tcp_gecko.h"
+#include "tcpgecko/sd_cheats.h"
+#include "fs/fs_utils.h"
+#include "fs/sd_fat_devoptab.h"
 
 bool isCodeHandlerInstalled = false;
 bool areSDCheatsEnabled = false;
@@ -37,8 +39,7 @@ void applyFunctionPatches() {
 }
 
 void installCodeHandler() {
-	unsigned int physicalCodeHandlerAddress = (unsigned int) OSEffectiveToPhysical(
-			(void *) CODE_HANDLER_INSTALL_ADDRESS);
+	unsigned int physicalCodeHandlerAddress = (unsigned int) OSEffectiveToPhysical((void *) CODE_HANDLER_INSTALL_ADDRESS);
 	SC0x25_KernelCopyData((u32) physicalCodeHandlerAddress, (unsigned int) codeHandler, codeHandlerLength);
 	DCFlushRange((const void *) CODE_HANDLER_INSTALL_ADDRESS, (u32) codeHandlerLength);
 	isCodeHandlerInstalled = true;
@@ -65,9 +66,34 @@ void initializeScreen() {
 
 void install() {
 	installCodeHandler();
-	initializeUDPLog();
 	log_print("Patching functions\n");
 	applyFunctionPatches();
+}
+
+int mountSDCard(){
+    log_print("Mounting...\n");
+    int result = mount_sd_fat(SD_PATH);
+
+    if (result < 0) {
+        log_printf("Mounting error: %i\n", result);
+        return -1;
+    } else {
+        log_print("Mounted!\n");
+    }
+    return 0;
+}
+
+int unmountSDCard(){
+    log_print("Unmounting...\n");
+    s32 result = unmount_sd_fat(SD_PATH);
+
+    if (result < 0) {
+        log_printf("Unmounting error: %i\n", result);
+        return -1;
+    } else {
+        log_print("Unmouted!\n");
+    }
+    return 0;
 }
 
 /* Entry point */
@@ -207,6 +233,13 @@ int Menu_Main(void) {
 		// Launch system menu
 		SYSLaunchMenu();
 	}
+
+	if (areSDCheatsEnabled && shouldLoadSDCheats()) {
+        if(mountSDCard() == 0){
+            applySDCheats(SD_PATH);
+            unmountSDCard();
+        }
+    }
 
 	// For each title load, relaunch the TCP Gecko
 	return EXIT_RELAUNCH_ON_LOAD;

@@ -1,6 +1,7 @@
 #ifndef TCPGECKO_SD_CHEATS_H
 #define TCPGECKO_SD_CHEATS_H
 
-void considerApplyingSDCheats();
+bool shouldLoadSDCheats();
+bool applySDCheats(const char * basePath);
 
 #endif

@@ -3,24 +3,23 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-// #include <inttypes.h>
-#include "../common/common.h"
-#include <zlib.h> // Actually must be included before os_functions
-#include "../dynamic_libs/os_functions.h"
 #include <string.h>
 #include <malloc.h>
-#include "main.h"
+// #include <inttypes.h>
+#include <zlib.h> // Actually must be included before os_functions
+#include "../dynamic_libs/os_functions.h"
 #include "../dynamic_libs/socket_functions.h"
 #include "../dynamic_libs/gx2_functions.h"
 #include "../dynamic_libs/fs_functions.h"
 #include "../utils/logger.h"
+
+#include "tcpgecko_common.h"
+#include "tcpgecko_retainvars.h"
 #include "hardware_breakpoints.hpp"
 #include "linked_list.h"
 #include "address.h"
 #include "stack.h"
 #include "pause.h"
-#include "sd_ip_reader.h"
-#include "../patcher/function_patcher_gx2.h"
 #include "raw_assembly_cheats.h"
 #include "sd_cheats.h"
 
@@ -645,26 +644,26 @@ static int processCommands(struct pygecko_bss_t *bss, int clientfd) {
 			}
 			case COMMAND_TAKE_SCREEN_SHOT: {
 				// Tell the hook to dump the screen shot now
-				shouldTakeScreenShot = true;
+				tcpg_shouldTakeScreenShot = true;
 
 				// Tell the client the size of the upcoming image
-				ret = sendwait(bss, clientfd, (unsigned char *) &totalImageSize, sizeof(int));
+				ret = sendwait(bss, clientfd, (unsigned char *) &tcpg_totalImageSize, sizeof(int));
 				ASSERT_FUNCTION_SUCCEEDED(ret, "sendwait (total image size)")
 
 				// Keep sending the image data
-				while (remainingImageSize > 0) {
+				while (tcpg_remainingImageSize > 0) {
 					int bufferPosition = 0;
 
 					// Fill the buffer till it is full
 					while (bufferPosition <= DATA_BUFFER_SIZE) {
 						// Wait for data to be available
-						while (bufferedImageSize == 0) {
+						while (tcpg_bufferedImageSize == 0) {
 							os_usleep(WAITING_TIME_MILLISECONDS);
 						}
 
-						memcpy(buffer + bufferPosition, bufferedImageData, bufferedImageSize);
-						bufferPosition += bufferedImageSize;
-						bufferedImageSize = 0;
+						memcpy(buffer + bufferPosition, tcpg_bufferedImageData, tcpg_bufferedImageSize);
+						bufferPosition += tcpg_bufferedImageSize;
+						tcpg_bufferedImageSize = 0;
 					}
 
 					// Send the size of the current chunk
@@ -1447,7 +1446,6 @@ static int runTCPGeckoServer(int argc, void *argv) {
 
 	setup_os_exceptions();
 	socket_lib_init();
-	initializeUDPLog();
 
 	while (true) {
 		socketAddress.sin_family = AF_INET;
@@ -1535,10 +1533,6 @@ static s32 startTCPGeckoThread(s32 argc, void *argv) {
 
 			if (assemblySize > 0) {
 				executeAssembly();
-			}
-
-			if (areSDCheatsEnabled) {
-				considerApplyingSDCheats();
 			}
 		}
 	} else {

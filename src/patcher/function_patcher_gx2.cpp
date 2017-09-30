@@ -21,16 +21,11 @@
 #include "../utils/logger.h"
 #include "function_patcher_gx2.h"
 #include "dynamic_libs/os_functions.h"
+#include "tcpgecko/tcpgecko_retainvars.h"
 #include <gd.h>
 #include <string.h> // memcpy()
 
 static volatile int executionCounter = 0;
-
-bool shouldTakeScreenShot = false;
-unsigned int remainingImageSize = 0;
-unsigned int totalImageSize = 0;
-int bufferedImageSize = 0;
-void *bufferedImageData = NULL;
 
 declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s32
 		scan_target) {
@@ -39,28 +34,28 @@ declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *
 		log_printf("GX2CopyColorBufferToScanBuffer {surface width:%d, height:%d, image size:%d, image data:%x}\n",
 				   surface.width, surface.height, surface.image_size, surface.image_data);
 
-		if (shouldTakeScreenShot) {
+		if (tcpg_shouldTakeScreenShot) {
 			void *imageData = surface.image_data;
-			totalImageSize = surface.image_size;
-			remainingImageSize = totalImageSize;
+			tcpg_totalImageSize = surface.image_size;
+			tcpg_remainingImageSize = tcpg_totalImageSize;
 			int bufferSize = IMAGE_BUFFER_SIZE;
 
-			while (remainingImageSize > 0) {
-				bufferedImageData = malloc(bufferSize);
-				u32 imageSizeRead = totalImageSize - remainingImageSize;
-				memcpy(bufferedImageData, imageData + imageSizeRead, bufferSize);
-				bufferedImageSize = bufferSize;
+			while (tcpg_remainingImageSize > 0) {
+				tcpg_bufferedImageData = malloc(bufferSize);
+				u32 imageSizeRead = tcpg_totalImageSize - tcpg_remainingImageSize;
+				memcpy(tcpg_bufferedImageData, imageData + imageSizeRead, bufferSize);
+				tcpg_bufferedImageSize = bufferSize;
 
 				// Wait while the data is not read yet
-				while (bufferedImageSize > 0) {
+				while (tcpg_bufferedImageSize > 0) {
 					os_usleep(WAITING_TIME_MILLISECONDS);
 				}
 
-				free(bufferedImageData);
-				remainingImageSize -= bufferSize;
+				free(tcpg_bufferedImageData);
+				tcpg_remainingImageSize -= bufferSize;
 			}
 
-			shouldTakeScreenShot = false;
+			tcpg_shouldTakeScreenShot = false;
 		}
 		/*s32 format = surface.format;
 

@@ -3,7 +3,7 @@
 
 #include "../dynamic_libs/os_functions.h"
 #include "../utils/logger.h"
-#include "kernel.h"
+#include "tcpgecko_kernel.h"
 
 void writeCode(u32 address, u32 instruction) {
 	u32 *pointer = (u32 *) (address + 0xA0000000);

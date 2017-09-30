@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kernel.h"
+#include "tcpgecko_kernel.h"
 
 #define ENDING_ADDRESS 0x10000000
 unsigned int assemblySize = 0;

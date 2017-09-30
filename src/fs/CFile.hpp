@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <gctypes.h>
-#include "../common/fs_defs.h"
+#include "dynamic_libs/fs_defs.h"
 
 class CFile {
 public:

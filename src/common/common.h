@@ -5,7 +5,6 @@ extern "C" {
 #endif
 
 #include "os_defs.h"
-#include "fs_defs.h"
 
 #define CODE_HANDLER_INSTALL_ADDRESS 0x010F4000
 

@@ -148,7 +148,7 @@ static int sd_fat_open_r (struct _reent *r, void *fileStruct, const char *path, 
 		return -1;
 	}
 
-	int fd = -1;
+	s32 fd = -1;
 
 	OSLockMutex(dev->pMutex);
 
