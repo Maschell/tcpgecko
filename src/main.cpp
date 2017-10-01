@@ -30,8 +30,18 @@ typedef enum {
 } LaunchMethod;
 
 void applyFunctionPatches() {
-	patchIndividualMethodHooks(method_hooks_gx2, method_hooks_size_gx2, method_calls_gx2);
-	patchIndividualMethodHooks(method_hooks_coreinit, method_hooks_size_coreinit, method_calls_coreinit);
+	PatchInvidualMethodHooks(method_hooks_gx2, method_hooks_size_gx2, method_calls_gx2);
+	PatchInvidualMethodHooks(method_hooks_coreinit, method_hooks_size_coreinit, method_calls_coreinit);
+}
+
+void restoreFunctionPatches() {
+    RestoreInvidualInstructions(method_hooks_gx2,               method_hooks_size_gx2);
+    RestoreInvidualInstructions(method_hooks_coreinit,          method_hooks_size_coreinit);
+    KernelRestoreInstructions();
+}
+
+void deInit(){
+    restoreFunctionPatches();
 }
 
 unsigned char *screenBuffer;
@@ -87,17 +97,6 @@ int unmountSDCard(){
 
 /* Entry point */
 int Menu_Main(void) {
-    if (TCPGecko::isRunningAllowedTitleID()) {
-		InitOSFunctionPointers();
-		InitSocketFunctionPointers();
-		InitGX2FunctionPointers();
-
-		log_init();
-		log_print("OSGetTitleID checks passed...\n");
-		TCPGecko::startTCPGecko();
-
-		return EXIT_RELAUNCH_ON_LOAD;
-	}
 	//!*******************************************************************
 	//!                   Initialize function pointers                   *
 	//!*******************************************************************
@@ -108,139 +107,137 @@ int Menu_Main(void) {
 	InitVPadFunctionPointers();
 	InitSysFunctionPointers();
 
-	if (strcasecmp("men.rpx", cosAppXmlInfoStruct.rpx_name) == 0) {
-		return EXIT_RELAUNCH_ON_LOAD;
-	} else if (strlen(cosAppXmlInfoStruct.rpx_name) > 0 &&
-			   strcasecmp("ffl_app.rpx", cosAppXmlInfoStruct.rpx_name) != 0) {
-
-		return EXIT_RELAUNCH_ON_LOAD;
-	}
-
-	//! *******************************************************************
-	//! *                     Setup EABI registers                        *
-	//! *******************************************************************
-	register int old_sdata_start, old_sdata2_start;
-	asm volatile (
-	"mr %0, 13\n"
-			"mr %1, 2\n"
-			"lis 2, __sdata2_start@h\n"
-			"ori 2, 2,__sdata2_start@l\n" // Set the Small Data 2 (Read Only) base register.
-			"lis 13, __sdata_start@h\n"
-			"ori 13, 13, __sdata_start@l\n"// # Set the Small Data (Read\Write) base register.
-	: "=r" (old_sdata_start), "=r" (old_sdata2_start)
-	);
-
-	//!*******************************************************************
-	//!                    Initialize BSS sections                       *
-	//!*******************************************************************
-	asm volatile (
-	"lis 3, __bss_start@h\n"
-			"ori 3, 3,__bss_start@l\n"
-			"lis 5, __bss_end@h\n"
-			"ori 5, 5, __bss_end@l\n"
-			"subf 5, 3, 5\n"
-			"li 4, 0\n"
-			"bl memset\n"
-	);
+	log_init();
+    DEBUG_FUNCTION_LINE("Starting TCPGecko\n");
 
 	SetupKernelCallback();
-	// PatchMethodHooks();
+    int launchMethod = EXIT;
 
-	memoryInitialize();
-	VPADInit();
-	initializeScreen();
+	if(isInMiiMakerHBL()){
 
-	char messageBuffer[80];
-	int launchMethod;
-	int shouldUpdateScreen = 1;
-	s32 vpadError = -1;
-	VPADData vpad_data;
+        memoryInitialize();
+        VPADInit();
+        initializeScreen();
 
-	while (true) {
-		VPADRead(0, &vpad_data, 1, &vpadError);
+        char messageBuffer[80];
 
-		if (shouldUpdateScreen) {
-			OSScreenClearBufferEx(0, 0);
-			OSScreenClearBufferEx(1, 0);
+        int shouldUpdateScreen = 1;
+        s32 vpadError = -1;
+        VPADData vpad_data;
 
-			InitSocketFunctionPointers();
+        while (true) {
+            VPADRead(0, &vpad_data, 1, &vpadError);
 
-			// Build the IP address message
-			char ipAddressMessageBuffer[64];
-			__os_snprintf(ipAddressMessageBuffer, 64, "Your Wii U's IP address: %i.%i.%i.%i",
-						  (hostIpAddress >> 24) & 0xFF, (hostIpAddress >> 16) & 0xFF, (hostIpAddress >> 8) & 0xFF,
-						  hostIpAddress & 0xFF);
+            if (shouldUpdateScreen) {
+                OSScreenClearBufferEx(0, 0);
+                OSScreenClearBufferEx(1, 0);
 
-			PRINT_TEXT(14, 1, "-- TCP Gecko Installer --")
-			PRINT_TEXT(7, 2, ipAddressMessageBuffer)
-			PRINT_TEXT(0, 5, "Press A to install TCP Gecko (with built-in code handler)...")
-			PRINT_TEXT(0, 6, "Press X to install TCP Gecko (with code handler and SD cheats)...")
+                InitSocketFunctionPointers();
 
-			PRINT_TEXT(0, 8, "Note:")
-			PRINT_TEXT(0, 9, "* You can enable loading SD cheats with Mocha SD access")
-			PRINT_TEXT(0, 10, "* Generate and store GCTUs to your SD card with JGecko U")
+                // Build the IP address message
+                char ipAddressMessageBuffer[64];
+                __os_snprintf(ipAddressMessageBuffer, 64, "Your Wii U's IP address: %i.%i.%i.%i",
+                              (hostIpAddress >> 24) & 0xFF, (hostIpAddress >> 16) & 0xFF, (hostIpAddress >> 8) & 0xFF,
+                              hostIpAddress & 0xFF);
 
-			// testMount();
-			/*if (isSDAccessEnabled()) {
-				PRINT_TEXT2(0, 8, "SD card access: SD cheats will be applied automatically when titles are loaded!")
-			} else {
-				PRINT_TEXT2(0, 8, "No SD card access: Please run Mocha SD Access by maschell for SD cheat support...")
-			}*/
+                PRINT_TEXT(14, 1, "-- TCP Gecko Installer --")
+                PRINT_TEXT(7, 2, ipAddressMessageBuffer)
+                PRINT_TEXT(0, 5, "Press A to install TCP Gecko (with built-in code handler)...")
+                PRINT_TEXT(0, 6, "Press X to install TCP Gecko (with code handler and SD cheats)...")
 
-			PRINT_TEXT(0, 17, "Press Home to exit...")
+                PRINT_TEXT(0, 8, "Note:")
+                PRINT_TEXT(0, 9, "* You can enable loading SD cheats with Mocha SD access")
+                PRINT_TEXT(0, 10, "* Generate and store GCTUs to your SD card with JGecko U")
 
-			OSScreenFlipBuffersEx(0);
-			OSScreenFlipBuffersEx(1);
-		}
+                // testMount();
+                /*if (isSDAccessEnabled()) {
+                    PRINT_TEXT2(0, 8, "SD card access: SD cheats will be applied automatically when titles are loaded!")
+                } else {
+                    PRINT_TEXT2(0, 8, "No SD card access: Please run Mocha SD Access by maschell for SD cheat support...")
+                }*/
 
-		u32 pressedButtons = vpad_data.btns_d | vpad_data.btns_h;
+                PRINT_TEXT(0, 17, "Press Home to exit...")
 
-		// Home Button
-		if (pressedButtons & VPAD_BUTTON_HOME) {
-			launchMethod = EXIT;
+                OSScreenFlipBuffersEx(0);
+                OSScreenFlipBuffersEx(1);
+            }
 
-			break;
-		} else if (pressedButtons & VPAD_BUTTON_A) {
-			install();
-			launchMethod = TCP_GECKO;
+            u32 pressedButtons = vpad_data.btns_d | vpad_data.btns_h;
 
-			break;
-		} else if (pressedButtons & VPAD_BUTTON_X) {
-			install();
-			launchMethod = TCP_GECKO;
-			TCPGecko::setSDCheatsEnabled(true);
+            // Home Button
+            if (pressedButtons & VPAD_BUTTON_HOME) {
+                launchMethod = EXIT;
 
-			break;
-		}
+                break;
+            } else if (pressedButtons & VPAD_BUTTON_A) {
+                install();
+                launchMethod = TCP_GECKO;
 
-		// Button pressed?
-		shouldUpdateScreen = (pressedButtons &
-							  (VPAD_BUTTON_LEFT | VPAD_BUTTON_RIGHT | VPAD_BUTTON_UP | VPAD_BUTTON_DOWN)) ? 1 : 0;
-		os_usleep(20 * 1000);
-	}
+                break;
+            } else if (pressedButtons & VPAD_BUTTON_X) {
+                install();
+                launchMethod = TCP_GECKO;
+                TCPGecko::setSDCheatsEnabled(true);
 
-	asm volatile ("mr 13, %0" : : "r" (old_sdata_start));
-	asm volatile ("mr 2,  %0" : : "r" (old_sdata2_start));
+                break;
+            }
 
-	MEM1_free(screenBuffer);
-
-	memoryRelease();
-
-	if (launchMethod == EXIT) {
-		// Exit the installer
-		return EXIT_SUCCESS;
-	} else {
-		// Launch system menu
-		SYSLaunchMenu();
-	}
-
-	if (TCPGecko::areSDCheatsEnabled() && TCPGecko::shouldLoadSDCheats()) {
-        if(mountSDCard() == 0){
-            TCPGecko::applySDCheats(SD_PATH);
-            unmountSDCard();
+            // Button pressed?
+            shouldUpdateScreen = (pressedButtons &
+                                  (VPAD_BUTTON_LEFT | VPAD_BUTTON_RIGHT | VPAD_BUTTON_UP | VPAD_BUTTON_DOWN)) ? 1 : 0;
+            os_usleep(20 * 1000);
         }
+
+        MEM1_free(screenBuffer);
+
+        memoryRelease();
+	}else if (!isInMiiMakerHBL()){ // Boot Application
+        if (TCPGecko::isRunningAllowedTitleID()) {
+            InitOSFunctionPointers();
+            InitSocketFunctionPointers();
+            InitGX2FunctionPointers();
+
+            log_init();
+            DEBUG_FUNCTION_LINE("OSGetTitleID checks passed...\n");
+            //TCPGecko::startTCPGecko();
+        }
+
+
+        if (TCPGecko::areSDCheatsEnabled() && TCPGecko::shouldLoadSDCheats()) {
+            if(mountSDCard() == 0){
+                TCPGecko::applySDCheats(SD_PATH);
+                unmountSDCard();
+            }
+        }
+
+        DEBUG_FUNCTION_LINE("Menu_Main(line %d): Patching functions\n");
+
+        applyFunctionPatches();
+
+        return EXIT_RELAUNCH_ON_LOAD;
     }
 
-	// For each title load, relaunch the TCP Gecko
-	return EXIT_RELAUNCH_ON_LOAD;
+    if (launchMethod == TCP_GECKO) {
+        DEBUG_FUNCTION_LINE("Loading the System Menu\n");
+        SYSLaunchMenu();
+        return EXIT_RELAUNCH_ON_LOAD;
+	}
+
+
+    DEBUG_FUNCTION_LINE("Return to Homebrew Launcher\n");
+
+    deInit();
+    return EXIT_SUCCESS;
+}
+
+s32 isInMiiMakerHBL(){
+    if (OSGetTitleID != 0 && (
+            OSGetTitleID() == 0x000500101004A200 || // mii maker eur
+            OSGetTitleID() == 0x000500101004A100 || // mii maker usa
+            OSGetTitleID() == 0x000500101004A000 ||// mii maker jpn
+            OSGetTitleID() == 0x0005000013374842))
+        {
+            return 1;
+    }
+    return 0;
 }

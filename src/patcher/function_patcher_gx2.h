@@ -23,11 +23,11 @@ extern "C" {
 
 #include "../utils/function_patcher.h"
 
-extern FunctionHook method_hooks_gx2[];
+extern hooks_magic_t method_hooks_gx2[];
 
 extern u32 method_hooks_size_gx2;
 
-extern volatile unsigned int method_calls_gx2[];
+extern volatile u32 method_calls_gx2[];
 
 #ifdef __cplusplus
 }

@@ -27,7 +27,7 @@
 
 static volatile int executionCounter = 0;
 
-declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s32
+DECL(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s32
 		scan_target) {
 	if (executionCounter > 120) {
 		GX2Surface surface = colorBuffer->surface;
@@ -92,11 +92,10 @@ declareFunctionHook(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *
 	real_GX2CopyColorBufferToScanBuffer(colorBuffer, scan_target);
 }
 
-FunctionHook method_hooks_gx2[] __attribute__((section(".data"))) = {
-		// makeFunctionHook(GX2CopyColorBufferToScanBuffer, LIB_GX2, STATIC_FUNCTION)
+hooks_magic_t method_hooks_gx2[] __attribute__((section(".data"))) = {
+		// MAKE_MAGIC(GX2CopyColorBufferToScanBuffer, LIB_GX2, STATIC_FUNCTION)
 };
 
-u32 method_hooks_size_gx2 __attribute__((section(".data"))) = sizeof(method_hooks_gx2) / sizeof(FunctionHook);
+u32 method_hooks_size_gx2 __attribute__((section(".data"))) = sizeof(method_hooks_gx2) / sizeof(hooks_magic_t);
 
-volatile unsigned int method_calls_gx2[sizeof(method_hooks_gx2) / sizeof(FunctionHook) *
-									   FUNCTION_PATCHER_METHOD_STORE_SIZE] __attribute__((section(".data")));
+volatile u32 method_calls_gx2[sizeof(method_hooks_gx2) / sizeof(hooks_magic_t) * FUNCTION_PATCHER_METHOD_STORE_SIZE] __attribute__((section(".data")));

@@ -9,6 +9,7 @@ extern "C" {
 #endif
 
 int Menu_Main();
+s32 isInMiiMakerHBL();
 
 #ifdef __cplusplus
 }

@@ -6,8 +6,6 @@ extern "C" {
 
 #include "os_defs.h"
 
-#define CODE_HANDLER_INSTALL_ADDRESS 0x010F4000
-
 #define CAFE_OS_SD_PATH             "/vol/external01"
 #define SD_PATH                     "sd:"
 #define WIIU_PATH                   "/wiiu"
@@ -27,6 +25,8 @@ extern "C" {
 #define LIB_NN_ACP              11
 #define LIB_SYSHID              12
 #define LIB_VPADBASE            13
+#define LIB_AX_OLD              14
+#define LIB_PROC_UI             15
 
 // functions types
 #define STATIC_FUNCTION         0
