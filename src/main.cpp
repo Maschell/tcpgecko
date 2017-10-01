@@ -31,12 +31,12 @@ typedef enum {
 
 void applyFunctionPatches() {
 	PatchInvidualMethodHooks(method_hooks_gx2, method_hooks_size_gx2, method_calls_gx2);
-	PatchInvidualMethodHooks(method_hooks_coreinit, method_hooks_size_coreinit, method_calls_coreinit);
+	//PatchInvidualMethodHooks(method_hooks_coreinit, method_hooks_size_coreinit, method_calls_coreinit);
 }
 
 void restoreFunctionPatches() {
     RestoreInvidualInstructions(method_hooks_gx2,               method_hooks_size_gx2);
-    RestoreInvidualInstructions(method_hooks_coreinit,          method_hooks_size_coreinit);
+    //RestoreInvidualInstructions(method_hooks_coreinit,          method_hooks_size_coreinit);
     KernelRestoreInstructions();
 }
 
@@ -199,7 +199,7 @@ int Menu_Main(void) {
 
             log_init();
             DEBUG_FUNCTION_LINE("OSGetTitleID checks passed...\n");
-            //TCPGecko::startTCPGecko();
+            TCPGecko::startTCPGecko();
         }
 
 

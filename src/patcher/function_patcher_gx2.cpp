@@ -45,7 +45,7 @@ DECL(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s3
 			while (buffer->remainingImageSize > 0) {
 				buffer->bufferedImageData = malloc(bufferSize);
 				u32 imageSizeRead = buffer->totalImageSize - buffer->remainingImageSize;
-				memcpy(buffer->bufferedImageData, imageData + imageSizeRead, bufferSize);
+				memcpy(buffer->bufferedImageData, (void*)(((u32)imageData) + imageSizeRead), bufferSize);
 				buffer->bufferedImageSize = bufferSize;
 
 				// Wait while the data is not read yet
