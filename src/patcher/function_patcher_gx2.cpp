@@ -27,6 +27,9 @@
 
 static volatile int executionCounter = 0;
 
+// The dynamically allocated buffer size for the image copy
+#define TCPGECKO_IMAGE_BUFFER_SIZE 100
+
 DECL(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s32
 		scan_target) {
 	if (executionCounter > 120) {
@@ -40,7 +43,7 @@ DECL(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s3
 			void *imageData = surface.image_data;
 			buffer->totalImageSize = surface.image_size;
 			buffer->remainingImageSize = buffer->totalImageSize;
-			int bufferSize = IMAGE_BUFFER_SIZE;
+			int bufferSize = TCPGECKO_IMAGE_BUFFER_SIZE;
 
 			while (buffer->remainingImageSize > 0) {
 				buffer->bufferedImageData = malloc(bufferSize);
@@ -50,7 +53,7 @@ DECL(void, GX2CopyColorBufferToScanBuffer, const GX2ColorBuffer *colorBuffer, s3
 
 				// Wait while the data is not read yet
 				while (buffer->bufferedImageSize > 0) {
-					os_usleep(WAITING_TIME_MILLISECONDS);
+					os_usleep(100);
 				}
 
 				free(buffer->bufferedImageData);

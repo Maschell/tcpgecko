@@ -24,6 +24,8 @@
 #include "fs/fs_utils.h"
 #include "fs/sd_fat_devoptab.h"
 
+bool sdCheatsEnabled __attribute__((section(".data"))) = 0;
+
 typedef enum {
 	EXIT,
 	TCP_GECKO
@@ -177,7 +179,7 @@ int Menu_Main(void) {
             } else if (pressedButtons & VPAD_BUTTON_X) {
                 install();
                 launchMethod = TCP_GECKO;
-                TCPGecko::setSDCheatsEnabled(true);
+                sdCheatsEnabled = true;
 
                 break;
             }
@@ -199,19 +201,30 @@ int Menu_Main(void) {
 
             log_init();
             DEBUG_FUNCTION_LINE("OSGetTitleID checks passed...\n");
+
+            if (sdCheatsEnabled) {
+                if(mountSDCard() == 0){
+                    const char * basePath = "sd:";
+                    u64 currentTitleID = OSGetTitleID();
+                    char filePath[FS_MAX_ENTNAME_SIZE];
+                    memset(filePath, '0', sizeof(filePath));
+                    snprintf(filePath,FS_MAX_ENTNAME_SIZE,"%s/%s/%llX.%s",basePath,TCPGECKO_CODE_FOLDER,currentTitleID,TCPGECKO_CODEFILE_EXTENSION);
+                    DEBUG_FUNCTION_LINE("Title ID: %llX\n", currentTitleID);
+                    DEBUG_FUNCTION_LINE("File Path: %s\n", filePath);
+
+                    if(TCPGecko::applySDCheats(filePath)){
+                        //SUCCESS
+                    }else{
+                        //FAILED
+                    }
+                    unmountSDCard();
+                }
+            }
+
             TCPGecko::startTCPGecko();
         }
 
-
-        if (TCPGecko::areSDCheatsEnabled() && TCPGecko::shouldLoadSDCheats()) {
-            if(mountSDCard() == 0){
-                TCPGecko::applySDCheats(SD_PATH);
-                unmountSDCard();
-            }
-        }
-
         DEBUG_FUNCTION_LINE("Menu_Main(line %d): Patching functions\n");
-
         applyFunctionPatches();
 
         return EXIT_RELAUNCH_ON_LOAD;
